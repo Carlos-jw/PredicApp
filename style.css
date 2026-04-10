@@ -1,0 +1,43 @@
+:root{--jw-navy:#1a3a5c;--jw-navy-light:#24507a;--jw-gold:#d4af37;--jw-bg:#f8f9fa;--jw-text:#2d3748;--jw-muted:#718096;--jw-success:#2ecc71;--jw-warning:#f1c40f;--jw-danger:#e74c3c;--radius:12px;--shadow:0 2px 8px rgba(26,58,92,0.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Source Sans 3',sans-serif;background:var(--jw-bg);color:var(--jw-text);line-height:1.5;padding-bottom:80px}
+h1,h2,h3,h4{font-family:'Merriweather',serif;color:var(--jw-navy)}
+header{background:var(--jw-navy);color:#fff;padding:16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.app-title{font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.badge{font-size:0.7rem;background:#d4af37;color:var(--jw-navy);padding:2px 6px;border-radius:4px;display:none}
+.status-bar{display:flex;gap:8px;align-items:center}
+.btn-icon{background:rgba(255,255,255,0.1);border:none;color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer}
+.offline-badge{background:#e53e3e;color:#fff;padding:4px 8px;border-radius:20px;font-size:0.7rem}
+.stats{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;background:#fff;border-bottom:1px solid #e2e8f0}
+.stat-card{flex:1;min-width:70px;text-align:center;padding:8px;background:var(--jw-bg);border-radius:8px}
+.stat-num{font-size:1.2rem;font-weight:700;color:var(--jw-navy)}
+.stat-label{font-size:0.7rem;color:var(--jw-muted)}
+.nav-tabs{display:flex;background:#fff;padding:0 16px;border-bottom:2px solid #e2e8f0}
+.nav-tab{flex:1;padding:12px;text-align:center;cursor:pointer;border-bottom:3px solid transparent;font-weight:600;color:var(--jw-muted)}
+.nav-tab.active{color:var(--jw-navy);border-bottom-color:var(--jw-gold)}
+.board-header{padding:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.legend{display:flex;gap:10px;font-size:0.8rem}
+.legend span{display:flex;align-items:center;gap:4px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.dot.free{background:var(--jw-success)}.dot.partial{background:var(--jw-warning)}.dot.full{background:var(--jw-danger)}
+.hint-text{text-align:center;padding:8px;color:var(--jw-muted);font-style:italic;font-size:0.85rem}
+.desktop-table{width:100%;border-collapse:collapse;background:#fff;margin:0 16px 16px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.desktop-table th,.desktop-table td{padding:12px;text-align:center;border-bottom:1px solid #edf2f7;font-size:0.9rem}
+.desktop-table th{background:var(--jw-navy);color:#fff;font-weight:600;position:sticky;top:0}
+.slot-cell{cursor:pointer;padding:6px;border-radius:6px;transition:0.15s;font-weight:500}
+.slot-cell:hover{background:#edf2f7}
+.slot-cell.free{background:#e6fffa;color:#234e52}.slot-cell.partial{background:#fffbeb;color:#744210}.slot-cell.full{background:#fff5f5;color:#742a2a;cursor:default}
+.mobile-cards{display:none;flex-direction:column;gap:10px;padding:8px 16px}
+.slot-card{background:#fff;padding:12px;border-radius:var(--radius);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between}
+.btn-reserve{background:var(--jw-navy);color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+.modal.active{display:flex}
+.modal-content{background:#fff;width:100%;max-width:400px;border-radius:16px;padding:20px}
+.modal-header{display:flex;justify-content:space-between;margin-bottom:16px}
+.close-btn{background:none;border:none;font-size:1.5rem;cursor:pointer}
+.form-group{margin-bottom:12px;width:100%;padding:10px;border:1px solid #cbd5e0;border-radius:8px}
+.btn-primary{width:100%;padding:12px;background:var(--jw-navy);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;margin-top:8px}
+.btn-secondary{background:#e2e8f0;color:var(--jw-text);padding:10px;border:none;border-radius:8px;width:100%;margin-top:8px;cursor:pointer}
+.admin-list{margin:10px 0;max-height:150px;overflow-y:auto}
+.admin-list li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #edf2f7}
+@media(max-width:768px){.desktop-table{display:none}.mobile-cards{display:flex}}

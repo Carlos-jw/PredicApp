@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a3a5c">
+  <title>PredicApp — Exhibidores</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <!-- CSS Modular -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="app-title">📖 PredicApp <span id="role-badge" class="badge">Encargado</span></div>
+    <div class="status-bar">
+      <span class="offline-badge" style="display:none">📡 Sin conexión</span>
+      <button class="btn-icon" id="btn-install" style="display:none">📲 Instalar</button>
+      <button class="btn-icon" id="btn-admin-login">🔐 Admin</button>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat-card"><div class="stat-num" id="count-part">0</div><div class="stat-label">Participantes</div></div>
+    <div class="stat-card"><div class="stat-num" id="count-point">0</div><div class="stat-label">Puntos</div></div>
+    <div class="stat-card"><div class="stat-num" id="count-parti">0</div><div class="stat-label">Parciales</div></div>
+    <div class="stat-card"><div class="stat-num" id="count-comp">0</div><div class="stat-label">Completos</div></div>
+  </div>
+
+  <nav class="nav-tabs">
+    <div class="nav-tab active" data-view="board">📅 Tablero</div>
+    <div class="nav-tab" data-view="reserve">➕ Reservar</div>
+    <div class="nav-tab" data-view="people">👥 Participantes</div>
+    <div class="nav-tab" data-view="admin" id="tab-admin" style="display:none">⚙️ Admin</div>
+  </nav>
+
+  <main id="view-board">
+    <div class="board-header">
+      <h3>Exhibidores · Turnos Semanales</h3>
+      <div class="legend">
+        <span><span class="dot free"></span> Libre</span>
+        <span><span class="dot partial"></span> Parcial</span>
+        <span><span class="dot full"></span> Completo</span>
+      </div>
+    </div>
+    <div id="hint-text" class="hint-text">Toca una celda para ver detalles</div>
+    <table class="desktop-table" id="desktop-table">
+      <thead><tr><th>Hora</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th></tr></thead>
+      <tbody id="table-body"></tbody>    </table>
+    <div class="mobile-cards" id="mobile-cards"></div>
+  </main>
+
+  <!-- Modales -->
+  <div class="modal" id="modal-reserve">
+    <div class="modal-content">
+      <div class="modal-header"><h3>📋 Nueva Reserva</h3><button class="close-btn">&times;</button></div>
+      <div class="form-group"><label>Participante</label><select id="sel-participant"></select></div>
+      <div class="form-group"><label>Punto</label><select id="sel-point"></select></div>
+      <div class="form-group"><label>Día/Hora</label><input type="text" id="res-info" readonly></div>
+      <button class="btn-primary" id="btn-confirm-reserve">✅ Confirmar</button>
+      <button class="btn-secondary close-modal">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-participant">
+    <div class="modal-content">
+      <div class="modal-header"><h3>➕ Nuevo Participante</h3><button class="close-btn">&times;</button></div>
+      <input type="text" id="inp-part-name" placeholder="Nombre completo" class="form-group">
+      <input type="tel" id="inp-part-phone" placeholder="Teléfono" class="form-group">
+      <button class="btn-primary" id="btn-save-part">Guardar</button>
+      <button class="btn-secondary close-modal">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-admin">
+    <div class="modal-content" style="max-width:500px">
+      <div class="modal-header"><h3>📊 Panel del Encargado</h3><button class="close-btn">&times;</button></div>
+      <div class="admin-section">
+        <h4>📍 Puntos</h4>
+        <ul id="list-points" class="admin-list"></ul>
+        <button class="btn-secondary" id="btn-add-point">+ Agregar Punto</button>
+      </div>
+      <div class="admin-section">
+        <h4>👥 Participantes</h4>
+        <ul id="list-parts" class="admin-list"></ul>
+        <button class="btn-secondary" id="btn-open-add-part">+ Agregar</button>
+      </div>
+      <div class="admin-section">
+        <h4>🔑 Seguridad</h4>
+        <input type="password" id="old-pass" placeholder="Contraseña actual" class="form-group">
+        <input type="password" id="new-pass" placeholder="Nueva contraseña" class="form-group">
+        <button class="btn-primary" id="btn-change-pass">Actualizar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS Modulares (Cargados en orden) -->
+  <script src="db.js"></script>  <script src="ui.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Registro básico del Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(console.error);
+    }
+  </script>
+</body>
+</html>

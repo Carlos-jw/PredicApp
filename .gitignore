@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+.env
+.vscode/
+.idea/
+*.swp
+node_modules/
+dist/
+build/
+*.user-data.json
