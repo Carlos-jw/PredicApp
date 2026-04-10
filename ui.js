@@ -18,10 +18,6 @@ const UI = {
       const tr = document.createElement('tr');
       tr.innerHTML = `<td><strong>${t}</strong></td>`;
       
-      // Mobile Header (solo si es la primera hora para no repetir)
-      // Lógica simplificada para tarjetas
-      tr.appendChild(document.createElement('td')); // Placeholder logic
-      
       UI.DAYS.forEach(d => {
         const slot = slots[d]?.find(s => s.time === t);
         if (!slot) return;
@@ -44,8 +40,9 @@ const UI = {
       if(!slots[d]) return;
       const header = document.createElement('div');
       header.className = 'mobile-day-header';
-      header.textContent = UI.getFullDay(d);
-      // cards.appendChild(header); // Necesita estilo en CSS si se activa
+      header.textContent = `📅 ${UI.getFullDay(d)}`;
+      header.style.cssText = 'font-weight:700;color:var(--jw-navy);padding:10px 0 4px;font-size:1rem;border-bottom:2px solid var(--jw-gold);margin-top:8px';
+      cards.appendChild(header);
       
       slots[d].forEach(slot => {
         const card = document.createElement('div');
