@@ -18,6 +18,10 @@ const UI = {
       const tr = document.createElement('tr');
       tr.innerHTML = `<td><strong>${t}</strong></td>`;
       
+      // Mobile Header (solo si es la primera hora para no repetir)
+      // Lógica simplificada para tarjetas
+      tr.appendChild(document.createElement('td')); // Placeholder logic
+      
       UI.DAYS.forEach(d => {
         const slot = slots[d]?.find(s => s.time === t);
         if (!slot) return;
@@ -47,8 +51,13 @@ const UI = {
       slots[d].forEach(slot => {
         const card = document.createElement('div');
         card.className = 'slot-card';
-        card.innerHTML = `<span>${slot.time}</span> <span class="dot ${slot.status}"></span> <button class="btn-reserve">${slot.reservations.length>0?'Ver':'Reservar'}</button>`;
-        card.onclick = () => window.openReserve(d, slot);
+        const btnLabel = slot.reservations.length > 0 ? 'Ver' : 'Reservar';
+        const btn = document.createElement('button');
+        btn.className = 'btn-reserve';
+        btn.textContent = btnLabel;
+        btn.onclick = () => window.openReserve(d, slot);
+        card.innerHTML = `<span>${slot.time}</span> <span class="dot ${slot.status}"></span>`;
+        card.appendChild(btn);
         cards.appendChild(card);
       });
     });
