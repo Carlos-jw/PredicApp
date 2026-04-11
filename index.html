@@ -4,105 +4,200 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#1a3a5c">
+  <meta name="description" content="PredicApp — Gestión de turnos de exhibidores">
   <title>PredicApp — Exhibidores</title>
+
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
-  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
-  <!-- CSS Modular -->
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;600&display=swap"
+    rel="stylesheet"
+  >
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <!-- ── Header ─────────────────────────────────── -->
   <header>
-    <div class="app-title">📖 PredicApp <span id="role-badge" class="badge">Encargado</span></div>
+    <div class="app-title">
+      📖 PredicApp
+      <span id="role-badge" class="badge" aria-live="polite">Encargado</span>
+    </div>
     <div class="status-bar">
-      <span class="offline-badge" style="display:none">📡 Sin conexión</span>
-      <button class="btn-icon" id="btn-install" style="display:none">📲 Instalar</button>
-      <button class="btn-icon" id="btn-admin-login">🔐 Admin</button>
+      <span class="offline-badge" id="offline-badge" style="display:none" aria-live="assertive">
+        📡 Sin conexión
+      </span>
+      <button class="btn-icon" id="btn-install" style="display:none" aria-label="Instalar aplicación">
+        📲 Instalar
+      </button>
+      <button class="btn-icon" id="btn-admin-login" aria-label="Acceso de encargado">
+        🔐 Admin
+      </button>
     </div>
   </header>
 
-  <div class="stats">
-    <div class="stat-card"><div class="stat-num" id="count-part">0</div><div class="stat-label">Participantes</div></div>
-    <div class="stat-card"><div class="stat-num" id="count-point">0</div><div class="stat-label">Puntos</div></div>
-    <div class="stat-card"><div class="stat-num" id="count-parti">0</div><div class="stat-label">Parciales</div></div>
-    <div class="stat-card"><div class="stat-num" id="count-comp">0</div><div class="stat-label">Completos</div></div>
-  </div>
+  <!-- ── Stats ──────────────────────────────────── -->
+  <section class="stats" aria-label="Resumen">
+    <div class="stat-card">
+      <div class="stat-num" id="count-part"  aria-label="Total participantes">0</div>
+      <div class="stat-label">Participantes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="count-point" aria-label="Total puntos">0</div>
+      <div class="stat-label">Puntos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="count-parti" aria-label="Turnos parciales">0</div>
+      <div class="stat-label">Parciales</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="count-comp"  aria-label="Turnos completos">0</div>
+      <div class="stat-label">Completos</div>
+    </div>
+  </section>
 
-  <nav class="nav-tabs">
-    <div class="nav-tab active" data-view="board">📅 Tablero</div>
-    <div class="nav-tab" data-view="reserve">➕ Reservar</div>
-    <div class="nav-tab" data-view="people">👥 Participantes</div>
-    <div class="nav-tab" data-view="admin" id="tab-admin" style="display:none">⚙️ Admin</div>
+  <!-- ── Nav ────────────────────────────────────── -->
+  <nav class="nav-tabs" role="tablist" aria-label="Vistas principales">
+    <div class="nav-tab active" data-view="board"  role="tab" tabindex="0" aria-selected="true">
+      📅 Tablero
+    </div>
+    <div class="nav-tab" data-view="reserve" role="tab" tabindex="0" aria-selected="false">
+      ➕ Reservar
+    </div>
+    <div class="nav-tab" data-view="people"  role="tab" tabindex="0" aria-selected="false">
+      👥 Participantes
+    </div>
+    <div class="nav-tab" data-view="admin" id="tab-admin" role="tab" tabindex="0"
+         aria-selected="false" style="display:none">
+      ⚙️ Admin
+    </div>
   </nav>
 
-  <main id="view-board">
+  <!-- ── Tablero ────────────────────────────────── -->
+  <main id="view-board" aria-label="Tablero de turnos">
     <div class="board-header">
       <h3>Exhibidores · Turnos Semanales</h3>
-      <div class="legend">
-        <span><span class="dot free"></span> Libre</span>
-        <span><span class="dot partial"></span> Parcial</span>
-        <span><span class="dot full"></span> Completo</span>
+      <div class="legend" aria-label="Leyenda">
+        <span><span class="dot free"    aria-hidden="true"></span> Libre</span>
+        <span><span class="dot partial" aria-hidden="true"></span> Parcial</span>
+        <span><span class="dot full"    aria-hidden="true"></span> Completo</span>
       </div>
     </div>
-    <div id="hint-text" class="hint-text">Toca una celda para ver detalles</div>
-    <table class="desktop-table" id="desktop-table">
-      <thead><tr><th>Hora</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th></tr></thead>
-      <tbody id="table-body"></tbody>    </table>
-    <div class="mobile-cards" id="mobile-cards"></div>
+    <p id="hint-text" class="hint-text">Toca una celda para ver detalles</p>
+
+    <table class="desktop-table" id="desktop-table" aria-label="Turnos semanales">
+      <thead>
+        <tr>
+          <th scope="col">Hora</th>
+          <th scope="col">Lun</th>
+          <th scope="col">Mar</th>
+          <th scope="col">Mié</th>
+          <th scope="col">Jue</th>
+          <th scope="col">Vie</th>
+          <th scope="col">Sáb</th>
+          <th scope="col">Dom</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+
+    <div class="mobile-cards" id="mobile-cards" aria-label="Tarjetas de turnos"></div>
   </main>
 
-  <!-- Modales -->
-  <div class="modal" id="modal-reserve">
+  <!-- ── Modal: Nueva Reserva ───────────────────── -->
+  <div class="modal" id="modal-reserve" role="dialog"
+       aria-modal="true" aria-labelledby="modal-reserve-title">
     <div class="modal-content">
-      <div class="modal-header"><h3>📋 Nueva Reserva</h3><button class="close-btn">&times;</button></div>
-      <div class="form-group"><label>Participante</label><select id="sel-participant"></select></div>
-      <div class="form-group"><label>Punto</label><select id="sel-point"></select></div>
-      <div class="form-group"><label>Día/Hora</label><input type="text" id="res-info" readonly></div>
-      <button class="btn-primary" id="btn-confirm-reserve">✅ Confirmar</button>
+      <div class="modal-header">
+        <h3 id="modal-reserve-title">📋 Nueva Reserva</h3>
+        <button class="close-btn" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <div>
+        <label for="sel-participant">Participante</label>
+        <select id="sel-participant" class="form-group"></select>
+      </div>
+      <div>
+        <label for="sel-point">Punto</label>
+        <select id="sel-point" class="form-group"></select>
+      </div>
+      <div>
+        <label for="res-info">Día / Hora</label>
+        <input type="text" id="res-info" class="form-group" readonly aria-readonly="true">
+      </div>
+
+      <button class="btn-primary"    id="btn-confirm-reserve">✅ Confirmar</button>
       <button class="btn-secondary close-modal">Cancelar</button>
     </div>
   </div>
 
-  <div class="modal" id="modal-participant">
+  <!-- ── Modal: Nuevo Participante ─────────────── -->
+  <div class="modal" id="modal-participant" role="dialog"
+       aria-modal="true" aria-labelledby="modal-part-title">
     <div class="modal-content">
-      <div class="modal-header"><h3>➕ Nuevo Participante</h3><button class="close-btn">&times;</button></div>
-      <input type="text" id="inp-part-name" placeholder="Nombre completo" class="form-group">
-      <input type="tel" id="inp-part-phone" placeholder="Teléfono" class="form-group">
-      <button class="btn-primary" id="btn-save-part">Guardar</button>
+      <div class="modal-header">
+        <h3 id="modal-part-title">➕ Nuevo Participante</h3>
+        <button class="close-btn" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <label for="inp-part-name">Nombre completo</label>
+      <input type="text" id="inp-part-name"  class="form-group"
+             placeholder="Juan García" autocomplete="name">
+
+      <label for="inp-part-phone">Teléfono</label>
+      <input type="tel"  id="inp-part-phone" class="form-group"
+             placeholder="+57 300 000 0000" autocomplete="tel">
+
+      <button class="btn-primary"    id="btn-save-part">Guardar</button>
       <button class="btn-secondary close-modal">Cancelar</button>
     </div>
   </div>
 
-  <div class="modal" id="modal-admin">
+  <!-- ── Modal: Panel Admin ─────────────────────── -->
+  <div class="modal" id="modal-admin" role="dialog"
+       aria-modal="true" aria-labelledby="modal-admin-title">
     <div class="modal-content" style="max-width:500px">
-      <div class="modal-header"><h3>📊 Panel del Encargado</h3><button class="close-btn">&times;</button></div>
-      <div class="admin-section">
-        <h4>📍 Puntos</h4>
-        <ul id="list-points" class="admin-list"></ul>
+      <div class="modal-header">
+        <h3 id="modal-admin-title">📊 Panel del Encargado</h3>
+        <button class="close-btn" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <section class="admin-section">
+        <h4>📍 Puntos de predicación</h4>
+        <ul id="list-points" class="admin-list" aria-label="Lista de puntos"></ul>
         <button class="btn-secondary" id="btn-add-point">+ Agregar Punto</button>
-      </div>
-      <div class="admin-section">
+      </section>
+
+      <section class="admin-section">
         <h4>👥 Participantes</h4>
-        <ul id="list-parts" class="admin-list"></ul>
-        <button class="btn-secondary" id="btn-open-add-part">+ Agregar</button>
-      </div>
-      <div class="admin-section">
-        <h4>🔑 Seguridad</h4>
-        <input type="password" id="old-pass" placeholder="Contraseña actual" class="form-group">
-        <input type="password" id="new-pass" placeholder="Nueva contraseña" class="form-group">
-        <button class="btn-primary" id="btn-change-pass">Actualizar</button>
-      </div>
+        <ul id="list-parts" class="admin-list" aria-label="Lista de participantes"></ul>
+        <button class="btn-secondary" id="btn-open-add-part">+ Agregar Participante</button>
+      </section>
+
+      <section class="admin-section">
+        <h4>🔑 Cambiar contraseña</h4>
+        <label for="old-pass">Contraseña actual</label>
+        <input type="password" id="old-pass" class="form-group"
+               placeholder="••••••" autocomplete="current-password">
+
+        <label for="new-pass">Nueva contraseña</label>
+        <input type="password" id="new-pass" class="form-group"
+               placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+
+        <button class="btn-primary" id="btn-change-pass">Actualizar contraseña</button>
+      </section>
     </div>
   </div>
 
-  <!-- JS Modulares (Cargados en orden) -->
-  <script src="db.js"></script>  <script src="ui.js"></script>
-  <script src="app.js"></script>
-  <script>
-    // Registro básico del Service Worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(console.error);
-    }
-  </script>
+  <!--
+    type="module":
+    - Activa ES Modules (import/export)
+    - Scope aislado (no contamina window)
+    - Carga diferida automáticamente (equivale a defer)
+    - Orden de carga garantizado por el grafo de imports
+  -->
+  <script type="module" src="app.js"></script>
+
 </body>
 </html>
