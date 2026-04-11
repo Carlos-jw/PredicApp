@@ -1,43 +1,39 @@
 // ─────────────────────────────────────────────
-//  sw.js  —  Service Worker
-//  Mejoras: pre-caché funcional, fallback
-//           offline real, estrategia explícita
-//           (Cache First + Network Fallback),
-//           código legible y comentado
+//  sw.js  —  Service Worker (GitHub Pages)
+//  Base: https://TU-USUARIO.github.io/PredicApp/
 // ─────────────────────────────────────────────
 
 const CACHE_NAME = 'predicapp-v2.0';
+const BASE = '/PredicApp';
 
-// Assets que se pre-cachean en la instalación
-// (garantizan funcionamiento 100% offline)
 const PRECACHE_ASSETS = [
-  './',
-  './index.html',
-  './app.js',
-  './ui.js',
-  './db.js',
-  './config.js',
-  './auth.js',
-  './reservations.js',
-  './toast.js',
-  './style.css',
-  './manifest.json',
-  './assets/offline.html',
-  './assets/icons/icon-192x192.png',
-  './assets/icons/icon-512x512.png'
+  `${BASE}/`,
+  `${BASE}/index.html`,
+  `${BASE}/app.js`,
+  `${BASE}/ui.js`,
+  `${BASE}/db.js`,
+  `${BASE}/config.js`,
+  `${BASE}/auth.js`,
+  `${BASE}/reservations.js`,
+  `${BASE}/toast.js`,
+  `${BASE}/style.css`,
+  `${BASE}/manifest.json`,
+  `${BASE}/assets/offline.html`,
+  `${BASE}/assets/icons/icon-192x192.png`,
+  `${BASE}/assets/icons/icon-512x512.png`
 ];
 
-// ── Instalación: pre-cachear todos los assets estáticos ───────
+// ── Instalación ───────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(PRECACHE_ASSETS))
-      .then(() => self.skipWaiting()) // activar inmediatamente
+      .then(() => self.skipWaiting())
       .catch(err => console.error('[SW] Pre-caché fallido:', err))
   );
 });
 
-// ── Activación: limpiar cachés antiguas ───────────────────────
+// ── Activación: limpiar cachés antiguas ───────
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -51,15 +47,13 @@ self.addEventListener('activate', event => {
             })
         )
       )
-      .then(() => clients.claim()) // tomar control inmediatamente
+      .then(() => clients.claim())
   );
 });
 
-// ── Fetch: estrategia Cache First → Network → Offline ─────────
+// ── Fetch: Cache First → Network → Offline ────
 self.addEventListener('fetch', event => {
   const { request } = event;
-
-  // Ignorar peticiones no-GET y extensiones de desarrollo
   if (request.method !== 'GET') return;
   if (isDevUrl(request.url))    return;
 
@@ -67,27 +61,19 @@ self.addEventListener('fetch', event => {
 });
 
 async function handleFetch(request) {
-  // 1. Buscar en caché
   const cached = await caches.match(request);
   if (cached) return cached;
 
-  // 2. Intentar red
   try {
     const response = await fetch(request);
-
-    // Solo cachear respuestas válidas
     if (response.ok) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, response.clone());
     }
-
     return response;
   } catch {
-    // 3. Sin caché y sin red → página offline personalizada
-    const offlinePage = await caches.match('./assets/offline.html');
-    if (offlinePage) return offlinePage;
-
-    // Último recurso: respuesta de error limpia
+    const offline = await caches.match(`${BASE}/assets/offline.html`);
+    if (offline) return offline;
     return new Response('Sin conexión', {
       status: 503,
       headers: { 'Content-Type': 'text/plain; charset=utf-8' }
