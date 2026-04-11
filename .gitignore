@@ -1,10 +1,20 @@
+# Sistema operativo
 .DS_Store
 Thumbs.db
-.env
+
+# Editores
 .vscode/
 .idea/
-*.swp
+*.suo
+*.user
+
+# Logs
+*.log
+
+# Dependencias (por si en el futuro se añade un build step)
 node_modules/
-dist/
-build/
-*.user-data.json
+
+# Variables de entorno (nunca subir secrets)
+.env
+.env.local
+.env.*.local
