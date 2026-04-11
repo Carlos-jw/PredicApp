@@ -1,26 +1,25 @@
 // ─────────────────────────────────────────────
-//  sw.js  —  Service Worker (GitHub Pages)
-//  Base: https://TU-USUARIO.github.io/PredicApp/
+//  sw.js  —  Service Worker (Netlify / Vercel)
+//  Base: https://predicapp.netlify.app/
 // ─────────────────────────────────────────────
 
 const CACHE_NAME = 'predicapp-v2.0';
-const BASE = '/PredicApp';
 
 const PRECACHE_ASSETS = [
-  `${BASE}/`,
-  `${BASE}/index.html`,
-  `${BASE}/app.js`,
-  `${BASE}/ui.js`,
-  `${BASE}/db.js`,
-  `${BASE}/config.js`,
-  `${BASE}/auth.js`,
-  `${BASE}/reservations.js`,
-  `${BASE}/toast.js`,
-  `${BASE}/style.css`,
-  `${BASE}/manifest.json`,
-  `${BASE}/assets/offline.html`,
-  `${BASE}/assets/icons/icon-192x192.png`,
-  `${BASE}/assets/icons/icon-512x512.png`
+  './',
+  './index.html',
+  './app.js',
+  './ui.js',
+  './db.js',
+  './config.js',
+  './auth.js',
+  './reservations.js',
+  './toast.js',
+  './style.css',
+  './manifest.json',
+  './assets/offline.html',
+  './assets/icons/icon-192x192.png',
+  './assets/icons/icon-512x512.png'
 ];
 
 // ── Instalación ───────────────────────────────
@@ -72,7 +71,7 @@ async function handleFetch(request) {
     }
     return response;
   } catch {
-    const offline = await caches.match(`${BASE}/assets/offline.html`);
+    const offline = await caches.match('./assets/offline.html');
     if (offline) return offline;
     return new Response('Sin conexión', {
       status: 503,
