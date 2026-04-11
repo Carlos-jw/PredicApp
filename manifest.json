@@ -1,16 +1,25 @@
 {
   "name": "PredicApp — Exhibidores",
   "short_name": "PredicApp",
+  "description": "Gestión de turnos semanales de predicación",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#f8f9fa",
   "theme_color": "#1a3a5c",
   "orientation": "portrait-primary",
-  "description": "Organización de turnos de predicación pública",
-  "categories": ["productivity", "utilities"],
   "lang": "es",
   "icons": [
-    { "src": "assets/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "assets/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
