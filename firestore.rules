@@ -1,0 +1,196 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return signedIn() && userDoc().exists && userDoc().data.role == 'admin';
+    }
+
+    function isSubadmin() {
+      return signedIn() && userDoc().exists && userDoc().data.role == 'subadmin';
+    }
+
+    /** Cuentas antiguas sin campo = aprobadas; nuevas llevan adminApproved: false hasta que un admin las active. */
+    function isManuallyApproved() {
+      return userDoc().exists
+        && (!('adminApproved' in userDoc().data) || userDoc().data.adminApproved == true);
+    }
+
+    /**
+     * Puede usar datos de la app: admin, capitán (subadmin), o publicador aprobado por el super.
+     * Importante: los capitanes NO deben quedar bloqueados por adminApproved: false (rol distinto).
+     */
+    function canParticipate() {
+      return signedIn() && (isAdmin() || isSubadmin() || isManuallyApproved());
+    }
+
+    /** Lista segura; si falta el campo o no es lista, se trata como []. (Sin if/bloques: no valido en reglas.) */
+    function assignedPointIdsList() {
+      return (userDoc().exists
+          && 'assignedPointIds' in userDoc().data
+          && userDoc().data.assignedPointIds is list)
+        ? userDoc().data.assignedPointIds
+        : [];
+    }
+
+    function otherUserAssignedIds(other) {
+      return ('assignedPointIds' in other && other.assignedPointIds is list)
+        ? other.assignedPointIds
+        : [];
+    }
+
+    function assignedToPoint(pointId) {
+      return signedIn()
+        && userDoc().exists
+        && pointId in assignedPointIdsList();
+    }
+
+    function canManagePoint(pointId) {
+      return isAdmin() || (isSubadmin() && assignedToPoint(pointId));
+    }
+
+    /**
+     * Alineado con permissions.canUseAppData: sin pendiente (status) + adminApproved no false (legacy sin campo = ok).
+     * Solo rol usuario; admin y subadmin van por otras ramas.
+     */
+    function publicadorPuedeLeerDatosPunto() {
+      let u = userDoc().data;
+      return userDoc().exists
+        && u.role == 'usuario'
+        && (!('status' in u) || u.status != 'pendiente')
+        && (!('adminApproved' in u) || u.adminApproved != false);
+    }
+
+    /**
+     * Lectura de slots/reports (y ramas que comparten esta funcion): admin todo; capitán sus puntos;
+     * publicador solo si assignedPointIds incluye pointId. El doc participants usa ademas lectura amplia en allow read.
+     */
+    function canReadPointData(pointId) {
+      return signedIn()
+        && (
+          isAdmin()
+          || (isSubadmin() && assignedToPoint(pointId) && canParticipate())
+          || (publicadorPuedeLeerDatosPunto() && assignedToPoint(pointId))
+        );
+    }
+
+    /**
+     * Publicador asignado a este punto: alineado con `permissions.hasPointAccess` + rol usuario
+     * (puede escribir participants/slots/reports en su punto, no en otros).
+     */
+    function publicadorPuedeEscribirDatosPunto(pointId) {
+      return publicadorPuedeLeerDatosPunto() && assignedToPoint(pointId);
+    }
+
+    function dataDocAllowed(docId) {
+      return docId == 'participants' || docId == 'slots' || docId == 'reports';
+    }
+
+    function isPublicParticipantEnrollment(docId) {
+      return request.auth == null && docId == 'participants';
+    }
+
+    function pointAssignedTransitionOk() {
+      return request.resource.data.assignedPointIds == resource.data.assignedPointIds
+        || (
+          (!('assignedPointIds' in resource.data) || resource.data.assignedPointIds.size() == 0)
+          && request.resource.data.assignedPointIds is list
+          && request.resource.data.assignedPointIds.size() == 1
+        );
+    }
+
+    /** Inscripcion con punto mientras sigue adminApproved: false (elige punto para el capitán). */
+    function pendingManualAssignPointOk(userId) {
+      return request.auth.uid == userId
+        && userDoc().exists
+        && ('adminApproved' in userDoc().data)
+        && userDoc().data.adminApproved == false
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.adminApproved == resource.data.adminApproved
+        && pointAssignedTransitionOk();
+    }
+
+    /** Capitán aprueba status pendiente -> aprobado (solo esos campos cambian respecto al resto igual). */
+    function captainApprovesPendingUser() {
+      return isSubadmin()
+        && resource.data.role == 'usuario'
+        && resource.data.status == 'pendiente'
+        && request.resource.data.status == 'aprobado'
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.adminApproved == resource.data.adminApproved
+        && request.resource.data.assignedPointIds == resource.data.assignedPointIds
+        && assignedPointIdsList().hasAny(otherUserAssignedIds(resource.data));
+    }
+
+    /** Legado: escritura cerrada; lectura solo super (evita errores si queda suscripcion antigua). */
+    match /allowed_emails/{emailId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if isAdmin()
+        || (signedIn() && request.auth.uid == userId)
+        || (isSubadmin()
+            && resource.data.role == 'usuario'
+            && resource.data.status == 'pendiente'
+            && assignedPointIdsList().hasAny(otherUserAssignedIds(resource.data)));
+
+      allow create: if signedIn() && (
+        (request.auth.uid == userId
+          && request.resource.data.role == 'usuario'
+          && request.resource.data.assignedPointIds is list
+          && request.resource.data.assignedPointIds.size() == 0
+          && request.resource.data.adminApproved == false
+          && request.resource.data.status == 'pendiente')
+        || isAdmin()
+      );
+
+      allow update: if isAdmin()
+        || captainApprovesPendingUser()
+        || (request.auth.uid == userId
+            && request.resource.data.role == resource.data.role
+            && (!('adminApproved' in resource.data)
+              ? !('adminApproved' in request.resource.data)
+              : request.resource.data.adminApproved == resource.data.adminApproved)
+            && (
+              (canParticipate() && pointAssignedTransitionOk())
+              || pendingManualAssignPointOk(userId)
+            ));
+
+      allow delete: if isAdmin();
+    }
+
+    match /points/{pointId} {
+      /**
+       * Metadatos del punto (nombre, subadmin, etc.): lectura publica.
+       * Los datos sensibles viven en `points/{id}/data/*` y tienen reglas mas estrictas.
+       */
+      allow read: if true;
+
+      allow create, update, delete: if isAdmin();
+
+      match /data/{docId} {
+        /**
+         * participants: lectura amplia (getDoc antes de setDoc en inscripcion publica, con o sin sesion).
+         * slots/reports: solo canReadPointData (publicador solo en puntos de assignedPointIds).
+         */
+        allow read: if docId == 'participants' || canReadPointData(pointId);
+
+        allow write: if (
+          (canParticipate() && canManagePoint(pointId) && dataDocAllowed(docId))
+          || (publicadorPuedeEscribirDatosPunto(pointId) && dataDocAllowed(docId))
+          || isPublicParticipantEnrollment(docId)
+        );
+      }
+    }
+  }
+}

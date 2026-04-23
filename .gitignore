@@ -1,0 +1,19 @@
+# Sistema operativo
+.DS_Store
+Thumbs.db
+# Editores
+.vscode/
+.idea/
+*.suo
+*.user
+# Logs
+*.log
+# Dependencias (por si en el futuro se añade un build step)
+node_modules/
+# Variables de entorno (nunca subir secrets)
+.env
+.env.local
+.env.*.local
+# Credenciales Firebase (nunca subir)
+config.env.js
+serviceAccountKey.json

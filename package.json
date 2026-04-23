@@ -1,0 +1,10 @@
+{
+  "name": "predicapp",
+  "private": true,
+  "type": "module",
+  "description": "PWA de turnos de predicacion (sitio estatico, sin build)",
+  "scripts": {
+    "dev": "npx --yes serve . -l 3000",
+    "test": "node tests/reservation-conflicts.mjs && node tests/security-checks.mjs"
+  }
+}

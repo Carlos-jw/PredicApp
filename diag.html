@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PredicApp — Diagnóstico Firebase</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; line-height: 1.5; }
+    #log { background: #f4f6f8; padding: 12px; border-radius: 8px; min-height: 120px; }
+    .err { color: #b00020; }
+    button { margin: 6px 6px 6px 0; padding: 8px 14px; cursor: pointer; }
+    code { background: #eee; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Diagnóstico Firebase</h1>
+  <p id="who">Sin sesión</p>
+  <p>
+    Abre la consola (F12 → Red). Si ves <code>ERR_BLOCKED_BY_CLIENT</code> hacia
+    <code>firestore.googleapis.com</code>, el problema no son las reglas: es el navegador o extensiones bloqueando Google.
+  </p>
+  <button type="button" id="btn-google">Iniciar con Google y probar Firestore</button>
+  <button type="button" id="btn-out">Cerrar sesión</button>
+  <h2>Resultado</h2>
+  <div id="log"></div>
+  <p><a href="index.html">Volver a PredicApp</a></p>
+  <script type="module" src="diag.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1e2a3a">
+  <meta name="description" content="PredicApp - Gestion de turnos de predicacion con control de acceso por punto">
+  <title>PredicApp</title>
+
+  <link rel="manifest" href="/assets/manifest.json">
+  <link rel="apple-touch-icon" href="assets/192x192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/192x192.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://firebase.googleapis.com">
+  <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap"></noscript>
+
+  <link rel="stylesheet" href="style.css?v=2026-04-21-1" fetchpriority="high">
+</head>
+<body data-build="predicapp-v14" data-app-mode="guest">
+  <header class="app-top-header">
+    <div class="app-title">
+      Predic<span class="accent">App</span>
+      <span id="role-badge" class="role-pill" aria-live="polite">Participante</span>
+    </div>
+    <div class="header-actions">
+      <span class="offline-badge" id="offline-badge" style="display:none" aria-live="assertive">Sin conexion</span>
+      <span class="session-email" id="session-email">Sin sesion</span>
+      <button class="btn-icon" type="button" id="btn-open-auth" aria-label="Abrir autenticacion">Entrar</button>
+      <button class="btn-icon" type="button" id="btn-logout" style="display:none" aria-label="Cerrar sesion">Salir</button>
+    </div>
+  </header>
+
+  <div id="access-gate-banner" class="access-gate-banner" role="status" style="display:none" aria-live="polite"></div>
+
+  <div id="app-shell" class="app-shell">
+    <aside class="app-sidebar" aria-label="Menu lateral (escritorio)">
+      <div class="sidebar-inner">
+        <div class="sidebar-brand-row">
+          <span class="sidebar-brand">Predic<span class="accent">App</span></span>
+          <span class="sidebar-version">v4</span>
+        </div>
+        <nav class="sidebar-nav" id="sidebar-nav" role="navigation" aria-label="Secciones">
+          <button type="button" class="nav-tab nav-tab--sidebar active" data-view="home" aria-selected="true">
+            <span class="nav-tab__ico" aria-hidden="true">⌂</span><span class="nav-tab__txt">Inicio</span>
+          </button>
+          <button type="button" class="nav-tab nav-tab--sidebar" data-view="board" data-auth-required data-requires-access aria-selected="false">
+            <span class="nav-tab__ico" aria-hidden="true">▦</span><span class="nav-tab__txt" data-label-subadmin="Horarios" data-label-default="Tablero">Tablero</span>
+          </button>
+          <button type="button" class="nav-tab nav-tab--sidebar" data-view="reserve" data-auth-required data-requires-access aria-selected="false">
+            <span class="nav-tab__ico" aria-hidden="true">＋</span><span class="nav-tab__txt">Reservar</span>
+          </button>
+          <button type="button" class="nav-tab nav-tab--sidebar" data-view="my-reservations" data-auth-required data-requires-access aria-selected="false">
+            <span class="nav-tab__ico" aria-hidden="true">📋</span><span class="nav-tab__txt">Mis reservas</span>
+          </button>
+          <button type="button" class="nav-tab nav-tab--sidebar" data-view="people" data-auth-required data-requires-access aria-selected="false">
+            <span class="nav-tab__ico" aria-hidden="true">👥</span><span class="nav-tab__txt" data-label-admin="Participantes" data-label-default="Participantes">Participantes</span>
+          </button>
+          <button type="button" class="nav-tab nav-tab--sidebar" id="tab-admin" data-view="admin" aria-selected="false" style="display:none">
+            <span class="nav-tab__ico" aria-hidden="true">⚙</span><span class="nav-tab__txt">Super de servicio</span>
+          </button>
+          <button type="button" class="nav-tab nav-tab--sidebar" data-view="profile" data-auth-required aria-selected="false">
+            <span class="nav-tab__ico" aria-hidden="true">👤</span><span class="nav-tab__txt">Perfil</span>
+          </button>
+        </nav>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <div class="main-topbar">
+        <h1 class="main-title" id="workspace-title">Inicio</h1>
+      </div>
+
+      <section class="stats" id="stats-strip" aria-label="Resumen">
+        <div class="stat-card">
+          <div class="stat-num" id="count-part">0</div>
+          <div class="stat-label" id="label-count-part">Participantes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="count-point">0</div>
+          <div class="stat-label" id="label-count-point">Puntos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="count-parti">0</div>
+          <div class="stat-label" id="label-count-parti">Parciales</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="count-comp">0</div>
+          <div class="stat-label" id="label-count-comp">Completos</div>
+        </div>
+      </section>
+
+      <div class="main-scroll">
+        <main id="view-home" class="view-main" aria-label="Inicio">
+          <section id="home-pending-wait" class="home-start enroll-panel pending-wait-panel" style="display:none" aria-live="polite">
+            <h3 class="enroll-title">Espera</h3>
+            <p class="home-subtitle" id="home-pending-wait-msg">
+              Tu cuenta esta pendiente de aprobacion del capitán de tu punto. Te avisaremos aqui cuando cambie el estado.
+            </p>
+          </section>
+
+          <div id="home-main-content">
+            <section id="logged-pick-point-panel" class="home-start enroll-panel" style="display:none">
+              <h3 class="enroll-title">Elige tu punto</h3>
+              <p class="home-subtitle" id="logged-pick-point-subtitle">
+                Entraste con Google (o aun no tienes punto asignado). Selecciona el punto donde participas y guarda.
+              </p>
+              <label for="complete-point-select">Punto de predicacion</label>
+              <select id="complete-point-select" class="form-group">
+                <option value="">Cargando puntos…</option>
+              </select>
+              <button type="button" class="btn-primary" id="btn-complete-first-point">Guardar mi punto</button>
+            </section>
+
+            <section id="guest-enroll-panel" class="home-start enroll-panel">
+              <h3 class="enroll-title">Inscribirse como participante</h3>
+              <p class="home-subtitle">
+                Inscribete como participante sin crear cuenta. Elige el punto y registra tu nombre.
+              </p>
+              <label for="enroll-display-name">Nombre visible</label>
+              <input type="text" id="enroll-display-name" class="form-group" placeholder="Tu nombre" autocomplete="name" maxlength="80">
+
+              <label for="enroll-phone">Telefono de contacto (opcional)</label>
+              <input type="tel" id="enroll-phone" class="form-group" placeholder="+57 300 000 0000" autocomplete="tel" maxlength="30">
+
+              <label for="enroll-point">Punto de predicacion</label>
+              <select id="enroll-point" class="form-group">
+                <option value="">Cargando puntos…</option>
+              </select>
+
+              <label for="enroll-day">Dia preferido</label>
+              <select id="enroll-day" class="form-group">
+                <option value="">Selecciona un dia…</option>
+              </select>
+
+              <label for="enroll-time">Horario preferido</label>
+              <select id="enroll-time" class="form-group">
+                <option value="">Selecciona una hora…</option>
+              </select>
+
+              <button type="button" class="btn-primary" id="btn-enroll-submit">Inscribirme al punto</button>
+            </section>
+
+            <section id="captain-pending-approval" class="admin-section panel-tight home-captain-pending" style="display:none">
+              <h3 class="view-section-title">Cuentas pendientes de aprobacion</h3>
+              <p class="view-muted">Publicadores con cuenta en espera en tus puntos.</p>
+              <ul id="captain-pending-users-list" class="admin-list"></ul>
+            </section>
+          </div>
+
+        </main>
+
+        <main id="view-board" class="view-main" aria-label="Tablero de turnos" style="display:none">
+          <section class="admin-section">
+            <label for="filter-point">Punto</label>
+            <select id="filter-point" class="form-group"></select>
+          </section>
+
+          <div class="board-header">
+            <h3>Turnos del punto</h3>
+            <div class="legend" aria-label="Leyenda">
+              <span><span class="dot free"></span> Libre</span>
+              <span><span class="dot partial"></span> Parcial</span>
+              <span><span class="dot ready"></span> Ultimo cupo</span>
+              <span><span class="dot complete"></span> Completo</span>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="desktop-table" aria-label="Turnos semanales">
+              <thead>
+                <tr>
+                  <th scope="col">Hora</th>
+                  <th scope="col">Lun</th>
+                  <th scope="col">Mar</th>
+                  <th scope="col">Mie</th>
+                  <th scope="col">Jue</th>
+                  <th scope="col">Vie</th>
+                  <th scope="col">Sab</th>
+                  <th scope="col">Dom</th>
+                </tr>
+              </thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+
+          <div class="mobile-cards" id="mobile-cards" aria-label="Turnos en tarjetas"></div>
+        </main>
+
+        <main id="view-reserve" class="view-main" aria-label="Reservar" style="display:none">
+          <section class="admin-section panel-tight">
+            <h3 class="view-section-title">Nueva reserva</h3>
+
+            <label for="sel-reserve-point">Punto</label>
+            <select id="sel-reserve-point" class="form-group"></select>
+
+            <label for="select-day">Dia</label>
+            <select id="select-day" class="form-group"></select>
+
+            <label for="select-time">Horario</label>
+            <select id="select-time" class="form-group"></select>
+
+            <p id="selected-slot-summary" class="slot-summary">Selecciona dia y horario.</p>
+
+            <label for="sel-participant">Participante principal</label>
+            <select id="sel-participant" class="form-group"></select>
+
+            <label for="sel-companion1">Companero 1</label>
+            <select id="sel-companion1" class="form-group"></select>
+
+            <label for="sel-companion2">Companero 2</label>
+            <select id="sel-companion2" class="form-group"></select>
+
+            <button type="button" class="btn-primary" id="btn-save-reserve-form">Guardar reserva</button>
+            <button type="button" class="btn-secondary" id="btn-cancel-my-reservation" disabled>Cancelar mi reserva</button>
+          </section>
+        </main>
+
+        <main id="view-my-reservations" class="view-main" aria-label="Mis reservas" style="display:none">
+          <section class="admin-section panel-tight">
+            <h3 class="view-section-title">Mis reservas activas</h3>
+            <p class="view-muted" id="my-reservations-hint">Tus turnos en todos los puntos visibles.</p>
+            <ul id="my-reservations-list" class="reservation-list"></ul>
+          </section>
+        </main>
+
+        <main id="view-people" class="view-main" aria-label="Participantes del punto" style="display:none">
+          <section class="admin-section panel-tight">
+            <h3 class="view-section-title">Participantes del punto</h3>
+            <p id="participants-permission-hint" class="view-muted"></p>
+            <ul id="participants-list" class="admin-list"></ul>
+            <button type="button" class="btn-secondary" id="btn-open-add-part">Agregar participante</button>
+          </section>
+        </main>
+
+        <main id="view-admin" class="view-main" aria-label="Super de servicio" style="display:none">
+          <section class="admin-section panel-tight">
+            <h3 class="view-section-title">Activar cuentas</h3>
+            <p class="view-muted">
+              Las cuentas nuevas quedan desactivadas hasta que las actives aqui. Luego podran usar tablero, reservas y participantes.
+              Las solicitudes de turno las confirma el capitán en el tablero.
+            </p>
+            <ul id="list-pending-approval" class="admin-list"></ul>
+          </section>
+
+          <section class="admin-section panel-tight">
+            <h3 class="view-section-title">Puntos</h3>
+            <ul id="list-points" class="admin-list"></ul>
+            <button type="button" class="btn-secondary" id="btn-add-point">Agregar punto</button>
+          </section>
+
+          <section class="admin-section panel-tight">
+            <h3 class="view-section-title">Asignar capitán</h3>
+            <p class="view-muted">
+              Elige el punto y, por correo o UID, a quien ya tiene cuenta (Auth) y al menos una vez abrio sesion en PredicApp
+              (así existe en <code>users</code>). Si solo pones correo, debe coincidir con un unico perfil en la lista de usuarios.
+            </p>
+
+            <label for="subadmin-uid">UID (opcional si usas correo)</label>
+            <input type="text" id="subadmin-uid" class="form-group" list="subadmin-uid-datalist" placeholder="UID o elige de la lista" autocomplete="off">
+            <datalist id="subadmin-uid-datalist"></datalist>
+
+            <label for="subadmin-email">Correo</label>
+            <input type="email" id="subadmin-email" class="form-group" placeholder="capitan@ejemplo.com (basta si ya entro a la app)">
+
+            <label for="subadmin-name">Nombre visible</label>
+            <input type="text" id="subadmin-name" class="form-group" placeholder="Coordinador Punto Norte">
+
+            <label for="subadmin-point">Punto asignado</label>
+            <select id="subadmin-point" class="form-group"></select>
+
+            <button type="button" class="btn-primary" id="btn-create-subadmin">Asignar capitán</button>
+          </section>
+        </main>
+
+        <main id="view-profile" class="view-main" aria-label="Mi perfil" style="display:none">
+          <div id="profile-guest-cta" class="profile-guest-cta">
+            <p class="view-muted">Aun no has iniciado sesion. Puedes inscribirte con correo y elegir tu punto desde Inicio.</p>
+            <button type="button" class="btn-primary" id="btn-profile-go-enroll">Ir a inscripcion</button>
+            <button type="button" class="btn-secondary" id="btn-profile-go-login">Solo iniciar sesion</button>
+          </div>
+          <section class="profile-panel">
+            <div class="profile-hero">
+              <div class="profile-avatar" id="profile-avatar-initials" aria-hidden="true">?</div>
+              <div>
+                <h3 class="profile-name" id="profile-display-name">—</h3>
+                <p class="profile-email" id="profile-email">—</p>
+                <span class="profile-status-pill" id="profile-status-pill">Sesion</span>
+              </div>
+            </div>
+            <dl class="profile-dl">
+              <div><dt>Rol</dt><dd id="profile-role-detail">—</dd></div>
+              <div><dt>Punto asignado</dt><dd id="profile-assigned-point">—</dd></div>
+              <div><dt>Capitán</dt><dd id="profile-subadmin">—</dd></div>
+            </dl>
+            <button type="button" class="btn-secondary" id="btn-profile-logout">Cerrar sesion</button>
+          </section>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav" id="bottom-nav" role="navigation" aria-label="Menu inferior (movil)">
+    <button type="button" class="nav-tab nav-tab--bottom active" data-view="home" aria-selected="true">
+      <span class="nav-tab__ico" aria-hidden="true">⌂</span><span class="nav-tab__txt">Inicio</span>
+    </button>
+    <button type="button" class="nav-tab nav-tab--bottom" data-view="board" data-auth-required data-requires-access aria-selected="false">
+      <span class="nav-tab__ico" aria-hidden="true">▦</span><span class="nav-tab__txt" data-label-subadmin="Horarios" data-label-default="Tablero">Tablero</span>
+    </button>
+    <button type="button" class="nav-tab nav-tab--bottom" data-view="reserve" data-auth-required data-requires-access aria-selected="false">
+      <span class="nav-tab__ico" aria-hidden="true">＋</span><span class="nav-tab__txt">Reservar</span>
+    </button>
+    <button type="button" class="nav-tab nav-tab--bottom" data-view="my-reservations" data-auth-required data-requires-access aria-selected="false">
+      <span class="nav-tab__ico" aria-hidden="true">📋</span><span class="nav-tab__txt">Reservas</span>
+    </button>
+    <button type="button" class="nav-tab nav-tab--bottom" data-view="people" data-auth-required data-requires-access aria-selected="false">
+      <span class="nav-tab__ico" aria-hidden="true">👥</span><span class="nav-tab__txt">Gente</span>
+    </button>
+    <button type="button" class="nav-tab nav-tab--bottom tab-admin-nav" data-view="admin" aria-selected="false" style="display:none">
+      <span class="nav-tab__ico" aria-hidden="true">⚙</span><span class="nav-tab__txt">Super de servicio</span>
+    </button>
+    <button type="button" class="nav-tab nav-tab--bottom" data-view="profile" data-auth-required aria-selected="false">
+      <span class="nav-tab__ico" aria-hidden="true">👤</span><span class="nav-tab__txt">Perfil</span>
+    </button>
+  </nav>
+
+  <div class="modal" id="modal-report" role="dialog" aria-modal="true" aria-labelledby="modal-report-title">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-report-title">Reporte de turno</h3>
+        <button type="button" class="close-btn" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <p id="report-slot-label" class="modal-lead"></p>
+
+      <label for="report-date">Fecha del turno</label>
+      <input type="date" id="report-date" class="form-group">
+
+      <label for="report-start-time">Hora de inicio</label>
+      <input type="time" id="report-start-time" class="form-group">
+
+      <label for="report-fulfilled">Se cumplio el turno?</label>
+      <select id="report-fulfilled" class="form-group">
+        <option value="true">Si</option>
+        <option value="false">No</option>
+      </select>
+
+      <label for="report-conversation">Se inicio alguna conversacion?</label>
+      <select id="report-conversation" class="form-group">
+        <option value="true">Si</option>
+        <option value="false">No</option>
+      </select>
+
+      <label for="report-studies">Estudios</label>
+      <input type="number" id="report-studies" class="form-group" min="0" step="1" value="0">
+
+      <label for="report-notes">Notas</label>
+      <textarea id="report-notes" class="form-group" rows="3" placeholder="Observaciones opcionales"></textarea>
+
+      <div class="modal-actions-row">
+        <button type="button" class="btn-primary" id="btn-save-report">Guardar reporte</button>
+        <button type="button" class="btn-secondary" id="btn-download-report">Descargar PDF</button>
+        <button type="button" class="btn-secondary" id="btn-remove-report">Eliminar reporte</button>
+      </div>
+      <button type="button" class="btn-secondary close-modal">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-auth" role="dialog" aria-modal="true" aria-labelledby="modal-auth-title">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-auth-title">Iniciar sesión</h3>
+        <button type="button" class="close-btn" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <button type="button" class="btn-google" id="btn-google-signin" aria-label="Continuar con cuenta de Google">
+        <span class="btn-google-icon" aria-hidden="true">G</span>
+        Continuar con Google
+      </button>
+      <p class="auth-divider"><span>o con correo</span></p>
+
+      <label for="auth-email">Correo</label>
+      <input type="email" id="auth-email" class="form-group" placeholder="tu-correo@ejemplo.com" autocomplete="email">
+
+      <label for="auth-password">Contraseña</label>
+      <input type="password" id="auth-password" class="form-group" placeholder="Contraseña" autocomplete="current-password">
+
+      <button type="button" class="btn-primary" id="btn-login">Entrar</button>
+      <button type="button" class="btn-secondary close-modal">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-participant" role="dialog" aria-modal="true" aria-labelledby="modal-part-title">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-part-title">Nuevo participante</h3>
+        <button type="button" class="close-btn" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <label for="inp-part-name">Nombre completo</label>
+      <input type="text" id="inp-part-name" class="form-group" placeholder="Juan Garcia" autocomplete="name">
+
+      <label for="inp-part-phone">Telefono</label>
+      <input type="tel" id="inp-part-phone" class="form-group" placeholder="+57 300 000 0000" autocomplete="tel">
+
+      <button type="button" class="btn-primary" id="btn-save-part">Guardar</button>
+      <button type="button" class="btn-secondary close-modal">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-reassign-point" role="dialog" aria-modal="true" aria-labelledby="modal-reassign-title">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-reassign-title">Cambiar de punto</h3>
+      </div>
+
+      <p id="reassign-summary" class="reassign-summary">
+        Tus reservas activas en otros puntos se cancelaran antes de guardar la nueva reserva.
+      </p>
+
+      <section class="reassign-point-card reassign-point-card-old" aria-label="Punto actual">
+        <span class="reassign-point-tag">Actual</span>
+        <strong id="reassign-from-point">Punto actual</strong>
+        <span id="reassign-from-subadmin">Sin capitán asignado</span>
+      </section>
+
+      <section class="reassign-point-card reassign-point-card-new" aria-label="Nuevo punto">
+        <span class="reassign-point-tag">Nuevo</span>
+        <strong id="reassign-to-point">Nuevo punto</strong>
+        <span id="reassign-to-subadmin">Sin capitán asignado</span>
+      </section>
+
+      <div class="reassign-affected-box">
+        <p class="reassign-affected-title">Reservas que se cancelaran</p>
+        <ul id="reassign-affected-list" class="reassign-affected-list"></ul>
+      </div>
+
+      <button type="button" class="btn-primary" id="btn-reassign-confirm">Si, cambiar de punto</button>
+      <button type="button" class="btn-secondary" id="btn-reassign-keep-point">Mantener punto actual</button>
+    </div>
+  </div>
+
+  <script type="module" src="app-main.js?v=2026-04-21-6"></script>
+</body>
+</html>
