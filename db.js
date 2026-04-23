@@ -242,6 +242,47 @@ function mergeUserAssignedPointFields(payload = {}) {
   return nextPayload;
 }
 
+/** IDs de puntos en documento `users/*` (lista o legado `assignedPointId`). */
+function assignedPointIdsFromUserData(data = {}) {
+  const fromArray = Array.isArray(data.assignedPointIds)
+    ? data.assignedPointIds.map((x) => String(x ?? '').trim()).filter(Boolean)
+    : [];
+  if (fromArray.length) return [...new Set(fromArray)];
+  const single = String(data.assignedPointId ?? '').trim();
+  return single ? [single] : [];
+}
+
+/**
+ * Perfil del usuario autenticado (cache o Firestore) para acotar lecturas de `points/*/data/slots`.
+ * Debe coincidir con `canReadPointData` en firestore.rules.
+ */
+async function getActorProfileForDataReads() {
+  let profile = localCache.currentUserProfile;
+  if (!profile && auth.currentUser) {
+    try {
+      const snap = await getDoc(userDocRef(auth.currentUser.uid));
+      if (snap.exists()) profile = { id: snap.id, ...snap.data() };
+    } catch (_) {
+      return null;
+    }
+  }
+  return profile;
+}
+
+/**
+ * Solo puntos cuyos `slots` puede leer el actor actual. Admin: todos. Otros: solo `assignedPointIds`.
+ */
+async function filterPointsForActorSlotReads(allPoints) {
+  const points = Array.isArray(allPoints) ? allPoints : [];
+  const profile = await getActorProfileForDataReads();
+  if (!profile) return [];
+  if (profile.role === ROLES.ADMIN) return points;
+  const ids = assignedPointIdsFromUserData(profile);
+  if (!ids.length) return [];
+  const allowed = new Set(ids);
+  return points.filter((p) => allowed.has(p.id));
+}
+
 function removeUserReservationsFromSlots(slots = {}, userId) {
   const cleanUserId = normalizeUserId(userId);
   if (!cleanUserId) return { slots, removedCount: 0, changed: false };
@@ -1041,7 +1082,8 @@ export const DB = {
     if (!cleanUserId) return [];
 
     const points = await loadAllPoints();
-    const pointSources = await loadPointSources(points);
+    const scopedPoints = await filterPointsForActorSlotReads(points);
+    const pointSources = await loadPointSources(scopedPoints);
     return collectUserReservationsAcrossPoints(cleanUserId, pointSources);
   },
 
@@ -1074,13 +1116,36 @@ export const DB = {
       return { ok: false, error: 'No hay capitán asignado para este punto.' };
     }
 
+    const actorProfile = await getActorProfileForDataReads();
+    if (!actorProfile) {
+      return { ok: false, error: 'No hay sesion o perfil de usuario.' };
+    }
+
+    let pointsForTransaction = points;
+    if (actorProfile.role !== ROLES.ADMIN) {
+      const touchIds = new Set([cleanPointId]);
+      try {
+        const userPreview = await getDoc(userDocRef(cleanUserId));
+        if (userPreview.exists()) {
+          assignedPointIdsFromUserData(userPreview.data()).forEach((id) => touchIds.add(id));
+        }
+      } catch (_) {
+        /* sin vista del usuario: al menos el punto destino */
+      }
+      const readable = new Set(assignedPointIdsFromUserData(actorProfile));
+      pointsForTransaction = points.filter((pt) => touchIds.has(pt.id) && readable.has(pt.id));
+      if (!pointsForTransaction.some((pt) => pt.id === cleanPointId)) {
+        return { ok: false, error: 'No tienes permiso para leer o escribir datos de ese punto.' };
+      }
+    }
+
     try {
       const result = await runTransaction(db, async (transaction) => {
         const userRef = userDocRef(cleanUserId);
         const userSnapshot = await transaction.get(userRef);
         const pointEntries = [];
 
-        for (const point of points) {
+        for (const point of pointsForTransaction) {
           const ref = pointDataRef(point.id, POINT_DATA_DOCS.SLOTS);
           const snapshot = await transaction.get(ref);
           pointEntries.push({
