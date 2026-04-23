@@ -259,8 +259,8 @@
           <section class="admin-section panel-tight">
             <h3 class="view-section-title">Asignar capitán</h3>
             <p class="view-muted">
-              Elige el punto y, por correo o UID, a quien ya tiene cuenta (Auth) y al menos una vez abrio sesion en PredicApp
-              (así existe en <code>users</code>). Si solo pones correo, debe coincidir con un unico perfil en la lista de usuarios.
+              Elige el punto. <strong>Sin UID:</strong> con un correo que aún no esté en Authentication se crea la cuenta, el perfil de capitán y se envía un enlace al correo para definir contraseña.
+              Si el correo ya tiene cuenta en Auth pero no aparece en la lista, pega el <strong>UID</strong> desde Firebase Console → Authentication.
             </p>
 
             <label for="subadmin-uid">UID (opcional si usas correo)</label>
@@ -447,6 +447,6 @@
     </div>
   </div>
 
-  <script type="module" src="app-main.js?v=2026-04-21-6"></script>
+  <script type="module" src="app-main.js?v=2026-04-22-1"></script>
 </body>
 </html>
