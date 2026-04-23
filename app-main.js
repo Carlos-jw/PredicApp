@@ -1,4 +1,12 @@
-import { observeSession, logout, signIn, signInWithGoogle } from './auth.js';
+import {
+  createCaptainAccountByEmail,
+  getAuthSignInMethodsForEmail,
+  observeSession,
+  logout,
+  sendCaptainFirstPasswordEmail,
+  signIn,
+  signInWithGoogle
+} from './auth.js';
 import {
   DAYS,
   MAX_RESERVATIONS_PER_SLOT,
@@ -1580,42 +1588,90 @@ function setupAdmin() {
     const emailRaw = document.getElementById('subadmin-email')?.value.trim() ?? '';
     const displayNameRaw = document.getElementById('subadmin-name')?.value.trim() ?? '';
     const pointId = document.getElementById('subadmin-point')?.value;
+    const btn = document.getElementById('btn-create-subadmin');
 
     if (!pointId) {
       toast('Elige el punto asignado al capitán.', 'error');
       return;
     }
 
-    const resolved = resolveCaptainAssignTarget(uidRaw, emailRaw, displayNameRaw);
-    if ('error' in resolved) {
-      toast(resolved.error, 'error');
-      return;
-    }
-
-    const { uid, email, displayName } = resolved;
-
-    if (email && !isValidEmail(email)) {
-      toast('Ingresa un correo valido para el capitán.', 'error');
-      return;
-    }
+    if (btn) btn.disabled = true;
+    let authHandles = null;
 
     try {
+      const resolved = await resolveCaptainAssignTargetAsync(uidRaw, emailRaw, displayNameRaw);
+      if ('error' in resolved) {
+        toast(resolved.error, 'error');
+        return;
+      }
+
+      let uid;
+      let email;
+      let displayName;
+
+      if (resolved.provision) {
+        authHandles = await createCaptainAccountByEmail(resolved.email);
+        uid = authHandles.uid;
+        email = resolved.email;
+        displayName = resolved.displayName;
+      } else {
+        uid = resolved.uid;
+        email = resolved.email;
+        displayName = resolved.displayName;
+      }
+
+      if (email && !isValidEmail(email)) {
+        if (authHandles) await authHandles.rollback();
+        toast('Ingresa un correo valido para el capitán.', 'error');
+        return;
+      }
+
       await DB.saveUserProfile(uid, {
         email,
         displayName,
         role: ROLES.SUBADMIN,
         assignedPointIds: [pointId],
+        status: USER_STATUS.APROBADO,
         adminApproved: true
       });
       await DB.assignSubadminToPoint(pointId, { id: uid, displayName, email });
- 
+
+      if (authHandles) {
+        try {
+          await sendCaptainFirstPasswordEmail(email);
+        } catch (e) {
+          console.warn('sendCaptainFirstPasswordEmail', e);
+        }
+        await authHandles.endOk();
+        toast('Capitán asignado. Se envió un enlace al correo para que defina su contraseña.', 'success');
+      } else {
+        toast('Capitán asignado al punto.', 'success');
+      }
+
       setValue('subadmin-uid', '');
       setValue('subadmin-email', '');
       setValue('subadmin-name', '');
-      toast('Capitán asignado al punto.', 'success');
     } catch (error) {
+      if (authHandles) {
+        try {
+          await authHandles.rollback();
+        } catch (rbErr) {
+          console.error(rbErr);
+        }
+      }
       console.error(error);
-      toast('No se pudo asignar el capitán.', 'error');
+      if (error?.code === 'auth/email-already-in-use' || error?.code === 'auth/provider-already-linked') {
+        toast(
+          'Ese correo ya está registrado en Authentication. Pega su UID (Firebase Console) o pide a la persona que inicie sesión una vez.',
+          'error',
+          9000
+        );
+      } else {
+        const msg = String(error?.message ?? error ?? '').trim();
+        toast(msg || 'No se pudo asignar el capitán.', 'error');
+      }
+    } finally {
+      if (btn) btn.disabled = false;
     }
   });
 
@@ -2371,10 +2427,14 @@ function isValidEmail(value) {
 }
 
 /**
- * Asignar capitán: UID manual o solo correo si ya existe `users/{uid}` (al menos un login).
- * @returns {{ uid: string, email: string, displayName: string } | { error: string }}
+ * Asignar capitán: UID, correo con perfil existente, o correo sin cuenta (se crea Auth + perfil).
+ * @returns {Promise<
+ *   { uid: string, email: string, displayName: string } |
+ *   { provision: true, email: string, displayName: string } |
+ *   { error: string }
+ * >}
  */
-function resolveCaptainAssignTarget(uidRaw, emailRaw, displayNameRaw) {
+async function resolveCaptainAssignTargetAsync(uidRaw, emailRaw, displayNameRaw) {
   const uidTrim = String(uidRaw ?? '').trim();
   const emailTrim = String(emailRaw ?? '').trim();
   const nameTrim = String(displayNameRaw ?? '').trim();
@@ -2382,6 +2442,9 @@ function resolveCaptainAssignTarget(uidRaw, emailRaw, displayNameRaw) {
   if (uidTrim) {
     const fromState = state.users.find((u) => u.id === uidTrim);
     const emailOut = emailTrim || String(fromState?.email ?? '').trim();
+    if (emailOut && !isValidEmail(emailOut)) {
+      return { error: 'Indica un correo valido (o rellenalo con el de Firebase).' };
+    }
     const nameOut =
       nameTrim || String(fromState?.displayName ?? '').trim() || emailOut || uidTrim;
     return {
@@ -2394,7 +2457,7 @@ function resolveCaptainAssignTarget(uidRaw, emailRaw, displayNameRaw) {
   if (!emailTrim || !isValidEmail(emailTrim)) {
     return {
       error:
-        'Pega el UID del capitán (Firebase → Authentication → usuario) o su correo si ya entro al menos una vez a PredicApp.'
+        'Indica un correo valido, o pega el UID del capitán (Firebase → Authentication).'
     };
   }
 
@@ -2403,6 +2466,9 @@ function resolveCaptainAssignTarget(uidRaw, emailRaw, displayNameRaw) {
     (u) => normalizeAuthEmailForAllowlist(u.email) === key
   );
 
+  if (matches.length > 1) {
+    return { error: 'Hay varios perfiles con ese correo; usa el UID para desambiguar.' };
+  }
   if (matches.length === 1) {
     const u = matches[0];
     return {
@@ -2412,13 +2478,18 @@ function resolveCaptainAssignTarget(uidRaw, emailRaw, displayNameRaw) {
     };
   }
 
-  if (matches.length > 1) {
-    return { error: 'Hay varios perfiles con ese correo; usa el UID para desambiguar.' };
+  const methods = await getAuthSignInMethodsForEmail(emailTrim);
+  if (methods.length > 0) {
+    return {
+      error:
+        'Ese correo ya tiene cuenta en Authentication pero aún no hay documento de usuario en la app. Abre Firebase Console → Authentication, copia el UID y pégalo en "UID" arriba, o pide a la persona que inicie sesión una vez con PredicApp.'
+    };
   }
 
   return {
-    error:
-      'No hay perfil con ese correo. El capitán debe iniciar sesion una vez en PredicApp, o indica su UID desde Firebase Console → Authentication.'
+    provision: true,
+    email: emailTrim,
+    displayName: (nameTrim || emailTrim).trim()
   };
 }
  
